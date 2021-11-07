@@ -1,5 +1,5 @@
 /**************************************************************************
-  Electron Taming Service CAN Display Firmware
+  Electron Taming Service CAN-OUT Firmware
 
   MCP1515:
   CS PA11
@@ -16,43 +16,8 @@
   RES PA8
  **************************************************************************/
 
-#include <Arduino.h>
-#include <SPI.h>
-#include <Wire.h>
-#include <CAN.h>
-#include <OBD2.h>
-#include <SD.h>
-#include <EEPROM.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#include <ClickEncoder.h>
-
-#define MCP2515_CS_PIN          15
-#define MCP2515_INT_PIN         2
-
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
-SPIClass SPI_2(PB15, PB14, PB13);
-
-#define OLED_DC     1
-#define OLED_CS     0
-#define OLED_RESET  8
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,
-                         &SPI_2, OLED_DC, OLED_RESET, OLED_CS);
-
-#define OUTPUT_CONTROL_1  PB3
-#define OUTPUT_CONTROL_2  PB4
-#define OUTPUT_CONTROL_3  PB5
-#define OUTPUT_CONTROL_4  PB8
-
-#define HIGHER_THAN 0
-#define LOWER_THAN  1
-
-#define AND 0
-#define OR 1
-
-#define DISABLED 2
+#include "globals.h"
+using namespace std;
 
 const int PROGMEM PIDs[] = {
   CALCULATED_ENGINE_LOAD,
@@ -66,66 +31,27 @@ const int PROGMEM PIDs[] = {
   AMBIENT_AIR_TEMPERATURE
 };
 
-struct ctrlStruct{
-  int outputPin = 0;
+SPIClass SPI_2(PB15, PB14, PB13);
 
-  int PIDx = 0;
-  int PIDy = 0;
-  int PIDz = 0;
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,
+                         &SPI_2, OLED_DC, OLED_RESET, OLED_CS);
 
-  int minOnTime = 0;
-  int maxOnTime = 0;
-
-  int activateFlag = 0;
-
-  int ctrlStatus = 0;
-
-  int activationTime = 0;
-
-  
-  int truthTable[4][2][4] = {
-    {{ 0,0,0,0 },
-    { 0,0,0,0 }},
-    {{ 0,0,0,0 },
-    { 0,0,0,0 }},
-    {{ 0,0,0,0 },
-    { 0,0,0,0 }},
-    {{ 0,0,0,0 },
-    { 0,0,0,0 }}
-  };
-
-  /*
-   * OPERATOR   X   Y   Z
-   * 
-   *            >/< >/< >/<
-   * &/|/OFF    val val val
-   * 
-   */
-
-};
-
-struct {
-  int LeftGaugePID;
-  int RightGaugePID;
-
-  int activePIDs[10];
-  int numOutputs;
-
-  ctrlStruct outputCtrl[4];
-} settings;
-
-int currentPIDValues[10] = {0};
-int numPIDs;
+File file;
 
 void setup() {
   Serial.begin(9600);
+
+  pinMode( OUTPUT_CONTROL_1, OUTPUT );
+  pinMode( OUTPUT_CONTROL_2, OUTPUT );
+  pinMode( OUTPUT_CONTROL_3, OUTPUT );
+  pinMode( OUTPUT_CONTROL_4, OUTPUT );
 
   CAN.setPins( MCP2515_CS_PIN, MCP2515_INT_PIN );
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC)) {
     Serial.println("SSD1306 allocation failed");
-    for (;;); // Don't proceed, loop forever
+    for (;;); // loop forever
   }
 
   // Clear the buffer
@@ -146,16 +72,14 @@ void setup() {
 
   
 
-  for ( int att = 0; att < 3; att++ ) {
+  for ( int att = 0; att < 3; att++ ) { // 3 attempts to connect to the OBD2 system
     if (!OBD2.begin()) {
       display.print(".");
       display.display();
       if ( att == 2 ) {
         display.print(" FAIL!");
         display.display();
-        while (1) {
-          ;;
-        }
+        for (;;);
       }
     } else {
       display.print(" OK!");
@@ -176,6 +100,53 @@ void setup() {
       display.display();
     }
   }
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+
+  // SD Card Init
+
+  while(1) {
+    if (!SD.begin(PB12)) {
+      Serial.println("Card failed, or not present");
+      display.print("No SD Card.");
+      display.display();
+      delay(250);
+      return;
+    }
+    Serial.println("Card initialized.");
+    display.print("SD Init.");
+    display.display();
+      delay(50);
+
+    if( SD.exists("settings.dat") ){
+      Serial.println("Settings file found.");
+      file = SD.open("settings.dat", O_RDWR);
+      if(file){
+        // read settings
+      } else{
+        Serial.println("File I/O error!");
+      }
+    } else {
+      file = SD.open("settings.dat", FILE_WRITE);
+      if(file){
+        file.close();
+      } else {
+        Serial.println("File I/O error!");
+      }
+    }
+    /*sprintf(filename, "SDLog%d.csv", fnum );
+    Serial.println(filename);
+    file = SD.open(filename, FILE_WRITE);
+    Serial.println(file);
+    if(file){
+      file.println(header1);
+      file.println(header2);
+      file.close();
+    } else {
+      Serial.println("File I/O Error!");
+    }*/
+  }
 }
 
 void loop() {
@@ -184,48 +155,9 @@ void loop() {
   }
 }
 
-void drawGauges() {
-
-}
-
 void pollOBD() {
   for ( int i = 0; i < numPIDs; i++ ) {
     currentPIDValues[i] = OBD2.pidRead( settings.activePIDs[i] );
   }
 }
 
-void outputControl() {
-  for ( int i = 0; i < 4; i++ ) { // outputCtrl structs
-    for ( int ii = 0; ii < 4; ii++ ) { // truthTable
-      if ( settings.outputCtrl[i].truthTable[ii][1][0] != 2 || ii == 0 ) { // If this row of the truth table is not OFF -- TODO SWITCH FOR AND OR
-        int tableOut[3] = { 0,0,0 };
-        for ( int iii = 1; iii < 4; iii++ ) {
-          switch ( settings.outputCtrl[i].truthTable[ii][0][iii] ){ // Check if we are looking for HIGHER or LOWER than truthTable value
-            case HIGHER_THAN:
-              if ( currentPIDValues[ settings.outputCtrl[i].PIDx ] >= settings.outputCtrl[i].truthTable[ii][1][iii] ) {
-                tableOut[iii-1] = 1;
-              }
-              break;
-              
-            case LOWER_THAN:
-              if ( currentPIDValues[ settings.outputCtrl[i].PIDx ] <= settings.outputCtrl[i].truthTable[ii][1][iii] ) {
-                tableOut[iii-1] = 1;
-              }
-              break;
-            
-            case DISABLED:
-              tableOut[iii-1] = 1;
-              break;
-          }
-         
-        }
-        
-      }
-      
-    }
-  }
-}
-
-void appendLog() {
-  
-}

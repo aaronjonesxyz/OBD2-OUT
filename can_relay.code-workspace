@@ -1,8 +1,7 @@
 {
 	"folders": [
 		{
-			"name": "211104-202323-genericSTM32F103C8",
-			"path": ".."
+			"path": "."
 		}
 	],
 	"settings": {}
