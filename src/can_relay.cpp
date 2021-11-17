@@ -2,34 +2,24 @@
   Electron Taming Service CAN-OUT Firmware
 
   MCP1515:
-  CS PA11
-  INT PA2
-  SI PA7
-  SO PA6
-  SCK PA5
+  Clock Crystal: 8MHz
+  CS: PA11
+  INT: PA2
+  SI: PA7
+  SO: PA6
+  SCK: PA5
 
   SSD1306:
-  SDA PB15
-  XCLK PB13
-  CS PA0
-  DC PA1
-  RES PA8
+  SDA: PB15
+  XCLK: PB13
+  CS: PA0
+  DC: PA1
+  RES: PA8
  **************************************************************************/
 
 #include "globals.h"
 using namespace std;
 
-const int PROGMEM PIDs[] = {
-  CALCULATED_ENGINE_LOAD,
-  ENGINE_COOLANT_TEMPERATURE,
-  INTAKE_MANIFOLD_ABSOLUTE_PRESSURE,
-  ENGINE_RPM,
-  VEHICLE_SPEED,
-  TIMING_ADVANCE,
-  AIR_INTAKE_TEMPERATURE,
-  THROTTLE_POSITION,
-  AMBIENT_AIR_TEMPERATURE
-};
 
 SPIClass SPI_2(PB15, PB14, PB13);
 
@@ -47,6 +37,7 @@ void setup() {
   pinMode( OUTPUT_CONTROL_4, OUTPUT );
 
   CAN.setPins( MCP2515_CS_PIN, MCP2515_INT_PIN );
+  CAN.setClockFrequency( 8e6 ); // 8MHz Crystal
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC)) {
@@ -59,8 +50,8 @@ void setup() {
 
   display.setTextSize(0);
   display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.print("ETS CAN Relay");
+  display.setCursor(0, 29);
+  display.print("     ETS CAN-OUT");
   display.display();
 
   delay(1000);
@@ -91,15 +82,17 @@ void setup() {
 
   display.clearDisplay();
   display.setCursor(0, 0);
-  display.print("Checking PIDs... ");
+  display.print("Checking PIDs... /n");
+  char numPids = 0;
   for (int pid = 0; pid < 96; pid++) {
     if (OBD2.pidSupported(pid)) {
-      Serial.println(OBD2.pidName(pid));
-      display.print("/");
-      display.print(pid);
-      display.display();
+      enabledPids.set( pid, true );
+      numPids++;
     }
   }
+
+  display.print( numPids );
+  display.print( " PIDs found." )
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -123,7 +116,7 @@ void setup() {
       Serial.println("Settings file found.");
       file = SD.open("settings.dat", O_RDWR);
       if(file){
-        // read settings
+
       } else{
         Serial.println("File I/O error!");
       }
@@ -151,7 +144,13 @@ void setup() {
 
 void loop() {
   while (1) {
-    ;;
+    int iat = OBD2.pidRead( AIR_INTAKE_TEMPERATURE );
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.print("IAT: ");
+    display.print(iat);
+    display.display();
+    
   }
 }
 

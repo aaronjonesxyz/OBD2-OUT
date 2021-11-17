@@ -7,6 +7,7 @@
 #include <EEPROM.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <bitset>
 #include "outputController.h"
 
 #ifndef GLOBALS_H
@@ -42,13 +43,20 @@ OFF
 };
 
 struct {
-  int LeftGaugePID;
+  int LeftGaugePID; // Make this a struct; PID, last 10 values, histogram scale settings, default values
   int RightGaugePID;
 
   int activePIDs[10];
 
   outputControllerClass outputCtrl[4];
-} settings;
+} settings = {
+  AIR_INTAKE_TEMPERATURE,
+  ENGINE_COOLANT_TEMPERATURE,
 
+  { AIR_INTAKE_TEMPERATURE, ENGINE_COOLANT_TEMPERATURE, ENGINE_RPM, VEHICLE_SPEED, TIMING_ADVANCE },
+
+
+};
+
+std::bitset<96> enabledPids;
 int currentPIDValues[10];
-int numPIDs;

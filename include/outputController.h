@@ -13,11 +13,12 @@ struct controlCase_t {
   int compValues[3]; // Values to compare
 };
 
-class outputControllerClass {
+class outputControllerClass { // Set default values!!
   public:
     void caseComparator();
     void pinControl( int state );
     void activeCaseCheck();
+    outputControllerClass() = default;
   
   public:
     int outputPin;
