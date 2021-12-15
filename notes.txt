@@ -1,0 +1,64 @@
+display 20x8 char @ size 1
+
+gauge, logging, output control
+
+SD Card - save settings
+
+Settings - 
+	gauge PID enum - left side, gauge PID enum - right side
+	
+	Logging PIDs
+	
+	
+	
+	
+Gauges - rate of change graphs, centre zero with bars up and down for change
+
+ROTENC
+- green = out1
+- blue = out2
+- purple = button
+- grey = gnd
+
+- CW = out1 first
+
+
+PA
+0 OLED CS
+1 OLED DC
+2 MCP1515 INT / unused
+3 		ADC/PWM
+4 		ADC
+5 SPI1 SCK
+6 SPI1 SO
+7 SPI1 SI
+8 OLED RES
+9 		USART
+10 		USART
+11 MCP1515 CS
+12 		
+13 		SWDIO
+14 		SWCLK
+15 		
+
+PB
+0		ADC/PWM
+1 		ADC/PWM
+2		BOOT1
+3 ROTENC IN1
+4 ROTENC IN2
+5 ROTENC BUTTON
+6 OUT1
+7 OUT2
+8 OUT3
+9 OUT4
+10 		I2C/USART
+11		I2C/USART
+12		SPI2 SS
+13 SPI2 CLK
+14		SPI2 MISO
+15 SPI2 MOSI
+
+white low blue high
+
+task scheduler

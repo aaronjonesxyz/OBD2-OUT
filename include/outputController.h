@@ -1,9 +1,8 @@
-// outputController.h - Output Control Class for OBD2-OUT
+// OutputController.h - Output Control Class for OBD2-OUT
 // Copyright Aaron Jones
 
 #ifndef OUTPUTCONTROLLER_H
 #define OUTPUTCONTROLLER_H
-#endif
 
 struct controlCase_t {
   int logic; // AND/OR operator, DISABLED ignores this case
@@ -13,12 +12,11 @@ struct controlCase_t {
   int compValues[3]; // Values to compare
 };
 
-class outputControllerClass { // Set default values!!
+class OutputControllerClass { // Set default values!!
   public:
-    void caseComparator();
+    OutputControllerClass( int outPin, int Px, int Py, int Pz );
+    void update();
     void pinControl( int state );
-    void activeCaseCheck();
-    outputControllerClass() = default;
   
   public:
     int outputPin;
@@ -27,14 +25,16 @@ class outputControllerClass { // Set default values!!
     int PIDy;
     int PIDz;
 
-    long int minOnTime;
-    long int maxOnTime;
+    long int minOnTime; // milliseconds, 0 = no min
+    long int maxOnTime; // 0 = no max
 
     int ctrlStatus;
     controlCase_t* activeCase;
-    long int onMillis;
+    unsigned long int onMillis;
 
     int hysteresis[3];
 
     controlCase_t controlCase[4];
 };
+
+#endif
