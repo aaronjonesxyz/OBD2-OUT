@@ -5,11 +5,11 @@
 #include "outputController.h"
 #include "globals.h"
 
-OutputControllerClass::OutputControllerClass( int outPin, int Px, int Py, int Pz ) {
-  outputPin = outPin;
-  PIDx = Px;
-  PIDy = Py;
-  PIDz = Pz;
+OutputControllerClass::OutputControllerClass( int out ) {
+  outputPin = out;
+  PIDx = 0;
+  PIDy = 0;
+  PIDz = 0;
   minOnTime = 1000;
   maxOnTime = 0;
   ctrlStatus = 0;
@@ -66,10 +66,10 @@ void OutputControllerClass::update() {
   // Check if any outputs need to be turned off
   for ( int i = 0; i < 3; i++ ) {
     switch ( activeCase->relOps[i] ) {
-      case MORE_THAN: if ( ( ( currValues[i] < ( activeCase->compValues[i] - hysteresis[i] ) ) && ( millis() - onMillis ) > minOnTime ) ||
+      case MORE_THAN: if ( ( ( currValues[i] < ( activeCase->compValues[i] - activeCase->hysteresis ) ) && ( millis() - onMillis ) > minOnTime ) ||
       ( ( millis() - onMillis ) > maxOnTime ) ) { pinControl( OFF ); ctrlStatus = OFF; } break;                                            // Check if value is outside hysteresis or over max activation time
 
-      case LESS_THAN: if ( ( ( currValues[i] > ( activeCase->compValues[i] + hysteresis[i] ) ) && ( millis() - onMillis ) > minOnTime ) ||
+      case LESS_THAN: if ( ( ( currValues[i] > ( activeCase->compValues[i] + activeCase->hysteresis ) ) && ( millis() - onMillis ) > minOnTime ) ||
       ( ( millis() - onMillis ) > maxOnTime ) ) { pinControl( OFF ); ctrlStatus = OFF; } break;
 
       case DISABLED: break;
@@ -89,3 +89,5 @@ void OutputControllerClass::pinControl ( int state ) {
     ctrlStatus = OFF;
   }
 }
+
+OutputControllerClass outControl[4] = { OUTPUT_CONTROL_1, OUTPUT_CONTROL_2, OUTPUT_CONTROL_3, OUTPUT_CONTROL_4 };

@@ -5,7 +5,7 @@
 
 class LoggerClass {
   public:
-    LoggerClass( int aPids, int nPids );
+    LoggerClass();
 
     int logEntry( int curPIDVals[20] );
 
@@ -13,6 +13,4 @@ class LoggerClass {
     int fnum;
     File file;
     char filename[12];
-    int * _activePIDs;
-    int _numPids;
 };

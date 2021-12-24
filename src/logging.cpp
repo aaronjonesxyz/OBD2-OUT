@@ -7,9 +7,7 @@
 #include "globals.h"
 
 
-LoggerClass::LoggerClass( int aPids, int nPids ){ // Check if a counter file for this log exists, read and write new count
-  _activePIDs = &aPids;
-  _numPids = nPids;
+LoggerClass::LoggerClass( ){ // Check if a counter file for this log exists, read and write new count
 
   if (!SD.begin(SDCARD_CS)) {
   Serial.println("Card failed, or not present");
@@ -42,14 +40,14 @@ LoggerClass::LoggerClass( int aPids, int nPids ){ // Check if a counter file for
   Serial.println(file);
   if(file){
     file.print("Time");
-    for( int i = 0; i < _numPids; i++ ){
+    for( int i = 0; i < activePIDs_n; i++ ){
       file.print( "," );
-      file.print( OBD2.pidName( _activePIDs[i] ) );
+      file.print( OBD2.pidName( activePIDs[i] ) );
     }
     file.print("/r/nSecs");
-    for( int i = 0; i < _numPids; i++ ){
+    for( int i = 0; i < activePIDs_n; i++ ){
       file.print( "," );
-      file.print( OBD2.pidUnits( _activePIDs[i] ) );
+      file.print( OBD2.pidUnits( activePIDs[i] ) );
     }
     file.close();
   } else {
@@ -62,7 +60,7 @@ int LoggerClass::logEntry( int curPIDVals[20] ){
   if(file){
     float time = millis() / 1000;
     file.printf( "%.3f", time );
-    for( int i = 0; i < _numPids; i++ ){
+    for( int i = 0; i < activePIDs_n; i++ ){
       file.print( "," );
       file.print( curPIDVals[i] );
     }

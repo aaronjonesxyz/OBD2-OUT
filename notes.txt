@@ -8,11 +8,6 @@ Settings -
 	gauge PID enum - left side, gauge PID enum - right side
 	
 	Logging PIDs
-	
-	
-	
-	
-Gauges - rate of change graphs, centre zero with bars up and down for change
 
 ROTENC
 - green = out1
@@ -21,6 +16,8 @@ ROTENC
 - grey = gnd
 
 - CW = out1 first
+
+DELTA OVER TIME
 
 
 PA
@@ -61,4 +58,26 @@ PB
 
 white low blue high
 
-task scheduler
+Output control
+--------------
+
+Output 1
+Output 2 ...
+
+Output 1 / Name
+---------------
+
+Name
+PIDs
+Min On Time
+Max On Time
+Hysteresis
+Control Logic
+
+PIDs
+----
+
+PID 1 / Name
+PID 2 / Name ...
+
+
