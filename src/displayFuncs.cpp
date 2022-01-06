@@ -442,9 +442,7 @@ void outputStateAlert( int output, int state ) {
 
 void loadPIDs() {
   if( !OBDConnected ) { return; }
-  int i = 0;
   for (int pid = 0; pid < masterPID_n; pid++) {
-    if( OBD2.pidSupported( masterPIDList[pid]) ){ settings.supportedPIDs[i] = pid; i++; }
+    settings.supportedPIDs[pid] = OBD2.pidSupported( masterPIDList[pid]);
   }
-  settings.supportedPIDs_n = i;
 }

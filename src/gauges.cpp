@@ -15,7 +15,10 @@ void XYPlotter::begin() {
 }
 
 void XYPlotter::newData( uint8_t type ) {
-  ( type ) ? newPid = 1 : newRange = 1;
+  switch( type ) {
+    case PID: newPid = 1; break;
+    case RANGE: newRange = 1; break;
+  }
 }
 
 void XYPlotter::update() {
@@ -42,7 +45,7 @@ void XYPlotter::update() {
   display.setCursor( 0, 0 );
   display.setTextSize(2);
   display.print( curVal );
-  display.setCursor( 127-( unit.length() * 11), 0 );
+  display.setCursor( 116 - ( ( unit.length() - 1 ) * 12 ), 0 );
   display.print( unit );
   display.drawFastHLine( 0, 54, 128, WHITE );
   display.drawFastHLine( 0, 15, 128, WHITE );

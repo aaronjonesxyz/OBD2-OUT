@@ -63,7 +63,7 @@ const uint8_t masterPIDList[] = {
   FUEL_INJECTION_TIMING,
   ENGINE_FUEL_RATE
 };
-const uint8_t masterPID_n = 29;
+const uint8_t masterPID_n = 32;
 
 enum {
   XYGRAPH,
