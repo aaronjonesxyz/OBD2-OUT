@@ -1,16 +1,19 @@
 // logging.h - SD Card logging to CSV
-#ifndef SDCARD_CS
-#define SDCARD_CS PB12
-#endif
+#ifndef LOGGING_H
+#define LOGGING_H
+
+#include <SD.h>
 
 class LoggerClass {
   public:
-    LoggerClass();
-
-    int logEntry( int curPIDVals[20] );
+    void init();
+    void logEntry();
 
   private:
-    int fnum;
+    uint8_t fnum;
     File file;
     char filename[12];
+    uint8_t lines = 0;
 };
+
+#endif

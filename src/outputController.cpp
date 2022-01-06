@@ -3,26 +3,16 @@
 
 #include <Arduino.h>
 #include "outputController.h"
+#include <OBD2.h>
 #include "globals.h"
-
-OutputControllerClass::OutputControllerClass( int out ) {
-  outputPin = out;
-  PIDx = 0;
-  PIDy = 0;
-  PIDz = 0;
-  minOnTime = 1000;
-  maxOnTime = 0;
-  ctrlStatus = 0;
-  onMillis = 0;
-}
 
 void OutputControllerClass::update() {
 
   // Check current PID values against cases
-  int currValues[3] = {
-    currentPIDValues[ PIDx ],
-    currentPIDValues[ PIDy ],
-    currentPIDValues[ PIDz ]
+  float currValues[3] = {
+    OBD2.pidRead( masterPIDList[PIDs[0]] ),
+    OBD2.pidRead( masterPIDList[PIDs[1]] ),
+    OBD2.pidRead( masterPIDList[PIDs[2]] )
   };
   if( ctrlStatus == OFF ) {
     for ( auto& cCase: controlCase ) {  // Iterate through the output control cases
@@ -66,11 +56,11 @@ void OutputControllerClass::update() {
   // Check if any outputs need to be turned off
   for ( int i = 0; i < 3; i++ ) {
     switch ( activeCase->relOps[i] ) {
-      case MORE_THAN: if ( ( ( currValues[i] < ( activeCase->compValues[i] - activeCase->hysteresis ) ) && ( millis() - onMillis ) > minOnTime ) ||
-      ( ( millis() - onMillis ) > maxOnTime ) ) { pinControl( OFF ); ctrlStatus = OFF; } break;                                            // Check if value is outside hysteresis or over max activation time
+      case MORE_THAN: if ( ( ( currValues[i] < ( activeCase->compValues[i] - activeCase->hysteresis ) ) && ( millis() - onMillis ) > (minOnTime * 100) ) ||
+      ( ( millis() - onMillis ) > (maxOnTime * 100) ) ) { pinControl( OFF ); ctrlStatus = OFF; } break;                                            // Check if value is outside hysteresis or over max activation time
 
-      case LESS_THAN: if ( ( ( currValues[i] > ( activeCase->compValues[i] + activeCase->hysteresis ) ) && ( millis() - onMillis ) > minOnTime ) ||
-      ( ( millis() - onMillis ) > maxOnTime ) ) { pinControl( OFF ); ctrlStatus = OFF; } break;
+      case LESS_THAN: if ( ( ( currValues[i] > ( activeCase->compValues[i] + activeCase->hysteresis ) ) && ( millis() - onMillis ) > (minOnTime * 100) ) ||
+      ( ( millis() - onMillis ) > (maxOnTime * 100) ) ) { pinControl( OFF ); ctrlStatus = OFF; } break;
 
       case DISABLED: break;
 
@@ -89,5 +79,3 @@ void OutputControllerClass::pinControl ( int state ) {
     ctrlStatus = OFF;
   }
 }
-
-OutputControllerClass outControl[4] = { OUTPUT_CONTROL_1, OUTPUT_CONTROL_2, OUTPUT_CONTROL_3, OUTPUT_CONTROL_4 };

@@ -13,6 +13,7 @@ unsigned long int alertTime = 0;
 int alertActive = 0;
 
 int menuSelector( std::vector< String > items, String title, int cursor = 0 ) { 
+  display.setTextSize(1);
   int titleCursor = 64 - ( ( title.length() / 2 ) * 6 );
   int itemsLen = items.size();
   items.push_back( "Back" );
@@ -67,7 +68,8 @@ int menuSelector( std::vector< String > items, String title, int cursor = 0 ) {
   }
 }
 
-int numberSelector( int min, int max, String title, int number = 0 ) {
+int numberSelector( int min, int max, String title, int number ) {
+  display.setTextSize(1);
   int titleCursor = 64 - ( ( title.length() * 6 ) / 2 );
   if( number < min ) number = min;
   int cursor = 0;
@@ -76,22 +78,24 @@ int numberSelector( int min, int max, String title, int number = 0 ) {
   int input = 0;
 
   while( 1 ){
-    ( cursor < 4 ) ? cursorX = 45 + ( cursor * 6 ) : cursorX = 51 + ( cursor * 6 );
+    cursorX = 50 + ( cursor * 6 );
     display.clearDisplay();
     display.setCursor(titleCursor, 0);
     display.print( title );
-    display.setCursor( 18 , 16 );
-    display.printf( "Range: %d to %d", min, max );
+    String rangeString = "Range: " + String(min) + " to " + String(max);
+    display.setCursor( 64-( rangeString.length() * 3), 16 );
+    display.print( rangeString );
     if( number >= 0 ) {
-      display.setCursor( 45, 50 );
-      display.printf( "%04d OK", number );
+      display.setCursor( 50, 50 );
+      display.printf( "%04d", number );
     } else {
-      display.setCursor( 39, 50 );
-      display.printf( "%05d OK", number );
+      display.setCursor( 44, 50 );
+      display.printf( "%05d", number );
     }
+    if( cursor == 4 ) display.setCursor( 100, 50 ), display.print( "|OK|"); else display.setCursor( 106, 50 ), display.print( "OK");
 
     display.setCursor( cursorX, 58 );
-    ( digitEdit ) ? display.printf( "T" ) : display.printf( "^" );
+    if( cursor < 4 ) ( digitEdit ) ? display.printf( "T" ) : display.printf( "^" );
     display.display();
 
     input = 0;
@@ -129,59 +133,47 @@ int numberSelector( int min, int max, String title, int number = 0 ) {
   }
 }
 
-int PIDSelector( int cursor = 0 ) { // Displays the supplied list of PIDs in a list with a selection cursor
+int PIDSelector( int cursor ) { // Displays the supplied list of PIDs in a list with a selection cursor
+  display.setTextSize(1);
   while(1) {
     display.clearDisplay();
     display.setCursor(0,24);
-    display.print("-");
+    ( cursor > -1 ) ? ( settings.supportedPIDs[cursor] ) ? display.print("*") : display.print(">") : display.print("-");
+    uint8_t textCursor;
+    uint8_t textCursorAdd;
+    uint8_t numDisplay;
     switch( cursor ) {
-      case 0:
-        if( activePIDs_n ) {
-          for( int i = 0; i < 5; i++ ){
-            if( activePIDs_n >= i ){
-              int textCursor = 24 + ( i * 8 );
-              display.setCursor( 7, textCursor );
-              display.print( OBD2.pidName(supportedPIDs[i]) );
-            }
-          }
-        }else{
-          int textCursor = 24;
-          display.setCursor( 7, textCursor );
-          display.print( "No PIDS" );
-        }
-        display.display();
+      case -1: 
+        textCursor = 24;
+        textCursorAdd = 32;
+        numDisplay = 4;
         break;
-      case 1:
-        for( int i = 0; i < 6; i++ ){
-          if( activePIDs_n >= i ){ 
-            int textCursor = 16 + ( i * 8 );
-            display.setCursor( 7, textCursor );
-            display.print( OBD2.pidName(supportedPIDs[(cursor-1)+i]) );
-          }
-        }
-        display.display();
-        break;
-      case 2:
-        for( int i = 0; i < 7; i++ ){
-          if( activePIDs_n >= i ){ 
-            int textCursor = 8 + ( i * 8 );
-            display.setCursor( 7, textCursor );
-            display.print( OBD2.pidName(supportedPIDs[(cursor-2)+i]) );
-          }
-        }
-        display.display();
+      case 0 ... 2:
+        textCursor = 16 - ( 8 * cursor );
+        textCursorAdd = 24 - ( 8 * cursor );
+        numDisplay = 5 + cursor;
         break;
       default:
-        for( int i = 0; i < 8; i++ ){
-          if( activePIDs_n >= ((cursor-3)+i) ){
-            int textCursor = ( i * 8 );
-            display.setCursor( 7, textCursor );
-            display.print( OBD2.pidName(supportedPIDs[(cursor-3)+i]) );
-          }
-        }
-        display.display();
+        textCursorAdd = 0;
+        numDisplay = 8;
         break;
     }
+    if( cursor < 3 ) {
+      display.setCursor( 7, textCursor );
+      display.print("Back");
+    }
+
+    for( int i = 0; i < numDisplay; i++ ){
+      uint8_t PID_n = ( cursor - ( numDisplay - 5 ) ) + i;
+      if( PID_n <= masterPID_n ) {
+        textCursor = textCursorAdd + ( i * 8 );
+        display.setCursor( 0, textCursor );
+        ( settings.supportedPIDs[PID_n] ) ? display.print( "*" ) : display.print(" ");
+        display.print( OBD2.pidName( masterPIDList[PID_n] ) );
+      }
+    }
+    display.display();
+
     int input = -1;
     while( input == -1 ){
       input = RotEnc.getNextInput();
@@ -189,10 +181,10 @@ int PIDSelector( int cursor = 0 ) { // Displays the supplied list of PIDs in a l
 
     switch( input ){
       case CCW:
-        if( cursor > 0 ) cursor--;
+        if( cursor > -1 ) cursor--;
         break;
       case CW:
-        if( cursor < activePIDs_n ) cursor++;
+        if( cursor < masterPID_n ) cursor++;
         break;
       case BUTTONPRESS:
         return cursor;
@@ -201,6 +193,7 @@ int PIDSelector( int cursor = 0 ) { // Displays the supplied list of PIDs in a l
 }
 
 String textEdit( String str, String title ){
+  display.setTextSize(1);
   str.reserve(TEXT_MAXLEN);
   int titleCursor = 64 - ( ( title.length() * 6 ) / 2 );
   int cursor = 0;
@@ -214,11 +207,10 @@ String textEdit( String str, String title ){
     display.setCursor( 3, 30 );
     display.print( str );
     display.setCursor( 3 + ( cursor * 6 ), 38 );
-    if( cursor == TEXT_MAXLEN ) {
-      display.setCursor( 50, 50 );
-      display.print( "OK?" );
-    } else {
-      ( charEdit ) ? display.printf( "T" ) : display.printf( "^" );
+    switch( cursor ) {
+      case -1: display.setCursor( 0, 50 ); display.print( "|CLEAR|" ); display.setCursor( 110, 50 ); display.print( "OK" ); break;
+      case TEXT_MAXLEN: display.setCursor( 104, 50 ); display.print( "|OK|" ); display.setCursor( 6, 50 ); display.print( "CLEAR" ); break;
+      default: ( charEdit ) ? display.printf( "T" ) : display.printf( "^" ); display.setCursor( 110, 50 ); display.print( "OK" ); display.setCursor( 6, 50 ); display.print( "CLEAR" ); break;
     }
     display.display();
 
@@ -254,13 +246,14 @@ String textEdit( String str, String title ){
     } else {
       switch( input ) {
         case CW:
-          if( cursor < TEXT_MAXLEN ) cursor++;
+          if( cursor < TEXT_MAXLEN ) cursor++; else cursor = -1;
           break;
         case CCW:
-          if( cursor > 0 ) cursor--;
+          if( cursor > -1 ) cursor--; else cursor = TEXT_MAXLEN;
           break;
         case BUTTONPRESS:
-          if( cursor < TEXT_MAXLEN ) {
+          if( cursor == -1 ) { str = ""; }
+          else if( cursor < TEXT_MAXLEN ) {
           charEdit++;
             if( cursor+1 > str.length() ) {
               for( int i = str.length(); i <= cursor; i++ ) {
@@ -279,41 +272,136 @@ String textEdit( String str, String title ){
 }
 
 void menuSystem() {
+  display.setTextSize(1);
   int state = MAINMENU;
-  int prevCursor[3] = {0,0,0};
+  uint8_t prevCursor[3] = {0,0,0};
+  uint8_t ctrlNum;
   while( state != -1 ) {
     switch( state ) {
       case MAINMENU:
         state = 1 + menuSelector( mainMenuLabels, "Main Menu", prevCursor[0] );
+        if( state == 4 ) state = -1;
         prevCursor[0] = state - 1;
         break;
       case DATADISPLAY:
-        state = 1 + menuSelector(  )
-        switch( menuSelector( gaugeMenuLabels, "Data Display", prevCursor[1] ) ) {
-          case 0:
-            settings.dataDisplayStyle = menuSelector( displayStyleLabels, "Data Display Style", settings.dataDisplayStyle );
-            break;
-          case 1:
-            PIDSelector( hist.pid );
-            prevCursor[1] = 1;
-            break;
-          case 2:
-            state = 0;
-            prevCursor[1] = 0;
-            break;
-        }
+        state = DATADISPLAY_STYLE + menuSelector( gaugeMenuLabels, "Data Display", prevCursor[1] );
+        prevCursor[1] = state - DATADISPLAY_STYLE;
+        if( state == 9 ) state = 0, prevCursor[1] = 0;
+        break;
+      case LOGGING:
+        state = LOGGING_FREQUENCY + menuSelector( loggingMenuLabels, "Logging", prevCursor[1] );
+        prevCursor[1] = state - LOGGING_FREQUENCY;
+        if( state == 11 ) state = 0, prevCursor[1] = 0;
         break;
       case OUTPUTCONTROL: {
-        prevCursor[0] = OUTPUTCONTROL - 1;
-        int n = menuSelector( settings.outputNames, "Output Control", prevCursor[1] );
-        if( n == 4 ) { state = MAINMENU; break; };
-        switch( menuSelector( outputControlLabels, settings.outputNames[n], prevCursor[2] ) ) {
-          case 0: settings.outputNames[n] = textEdit( settings.outputNames[n], "Output Name" ); break;
+        std::vector<String> _outControl;
+        _outControl.reserve(4);
+        for( auto& o : settings.outControl ) {
+          _outControl.push_back( o.name );
         }
-        } break;
-      default:
-        state = -1;
+        state = OUTPUTCONTROL_MENU + menuSelector( _outControl, "Output Control", prevCursor[1] );
+        prevCursor[1] = state - OUTPUTCONTROL_MENU;
+        if( state == 15 ) state = 0, prevCursor[1] = 0;
+        break; }
+
+
+      case DATADISPLAY_STYLE:
+        settings.dataDisplayStyle = menuSelector( displayStyleLabels, "Data Display Style", settings.dataDisplayStyle );
+        state = DATADISPLAY;
         break;
+      case DATADISPLAY_DATA: {
+        uint8_t c = 0;
+        uint8_t PIDs_n;
+        ( settings.dataDisplayStyle ) ? PIDs_n = settings.dataDisplayStyle : PIDs_n = 1;
+        while( c != PIDs_n ){
+          std::vector<String> _PIDs;
+          _PIDs.reserve( PIDs_n );
+          for( int i = 0; i < PIDs_n; i++ ) {
+            _PIDs.push_back(OBD2.pidName( masterPIDList[settings.activePIDs[i]] ));
+          }
+          c = menuSelector( _PIDs, "Data Display PIDs", c );
+          if( c < PIDs_n ) {
+            int p = PIDSelector();
+            if( p > -1 ) settings.activePIDs[c] = p, xyPlotter.newData( PID );
+          } else {
+            break;
+          }
+        }
+        state = DATADISPLAY;
+        break; }
+      case DATADISPLAY_GRAPHRANGEH: {
+        int old = settings.graphRangeH;
+        settings.graphRangeH = numberSelector( settings.graphRangeL, 9999, "Graph Upper Limit", settings.graphRangeH );
+        if( settings.graphRangeH != old ) xyPlotter.newData( RANGE );
+        state = DATADISPLAY;
+        break; }
+      case DATADISPLAY_GRAPHRANGEL: {
+        int old = settings.graphRangeL;
+        settings.graphRangeL = numberSelector( -40, settings.graphRangeH, "Graph Lower Limit", settings.graphRangeL );
+        if( settings.graphRangeL != old ) xyPlotter.newData( RANGE );
+        state = DATADISPLAY;
+        break; }
+
+
+      case LOGGING_FREQUENCY:
+        settings.loggingFreq = numberSelector( 0, 5000, "Frequency in mS", settings.loggingFreq );
+        state = LOGGING;
+        break;
+      case LOGGING_DATA: {
+        uint8_t c = 0;
+        while( c != 16 ){
+          std::vector<String> _PIDs;
+          _PIDs.reserve(16);
+          int i = 0;
+          for( auto& p : settings.activePIDs ) {
+            if( i > 3 ) _PIDs.push_back( OBD2.pidName(masterPIDList[p]) ); else i++;
+          }
+          c = menuSelector( _PIDs, "Logging PIDs", c );
+          if( c < 16 ) {
+            uint8_t p = PIDSelector();
+            if( p > -1 ) settings.activePIDs[c+4] = p;
+          } else {
+            break;
+          }
+        }
+        state = LOGGING;
+        break; }
+
+
+      case OUTPUTCONTROL_MENU ... OUTPUTCONTROL_MENU+3: {
+        ctrlNum = state - 9;
+        uint8_t c = menuSelector( { "Name", "PIDs", "Control Logic" }, settings.outControl[ctrlNum].name, prevCursor[2] );
+        prevCursor[2] = c;
+        if( c == 3 ) { state = OUTPUTCONTROL; break; }
+        if( c ) {
+          state = 12 + c;
+        } else {
+          String title = "Output ";
+          title = title + ( ctrlNum + 1);
+          settings.outControl[ctrlNum].name = textEdit( settings.outControl[ctrlNum].name, title );
+        }
+        break; }
+      case OUTPUTCONTROL_PIDS: {
+        std::vector<String> _PIDs;
+        _PIDs.reserve(3);
+        _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[0]] ) );
+        _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[1]] ) );
+        _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[2]] ) );
+        uint8_t c = 0;
+        while( c != 3 ){
+          _PIDs[0] = OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[0]] );
+          _PIDs[1] = OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[1]] );
+          _PIDs[2] = OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[2]] );
+          c = menuSelector( _PIDs, "Output  PIDs", c );                                               // TODO: build string "output x PIDs"
+          if( c < 3 ) {
+            uint8_t p = PIDSelector();
+            if( p > -1 ) settings.outControl[ctrlNum].PIDs[c] = p;
+          } else {
+            state = ctrlNum + 9;
+            break;
+          }
+        }
+        break; }
     }
   }
 }
@@ -333,9 +421,10 @@ void checkAlerts() {
   }
 
   if( alertActive ) {
-    String name = settings.outputNames[alertQueue[0].output];
+    String name = settings.outControl[alertQueue[0].output].name;
     String state = stateName[alertQueue[0].state];
-    int rectWidth = ( name.length() * 6 ) + 5;
+    int rectWidth;
+    ( name.length() > 3 ) ? rectWidth = ( name.length() * 6 ) + 5 : rectWidth = 29;
     int x = ( 128 - rectWidth ) / 2;
     int xS = ( 128 - ( state.length() * 6 ) ) / 2;
     display.fillRect( x, 0, rectWidth, 24, BLACK );
@@ -349,4 +438,13 @@ void checkAlerts() {
 
 void outputStateAlert( int output, int state ) {
   if( alertLast <= ALERT_MAX ) { alertQueue[alertLast] = { output, state }; alertLast++; }
+}
+
+void loadPIDs() {
+  if( !OBDConnected ) { return; }
+  int i = 0;
+  for (int pid = 0; pid < masterPID_n; pid++) {
+    if( OBD2.pidSupported( masterPIDList[pid]) ){ settings.supportedPIDs[i] = pid; i++; }
+  }
+  settings.supportedPIDs_n = i;
 }

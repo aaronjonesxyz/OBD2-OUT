@@ -1,0 +1,28 @@
+display: 0
+supportedPIDs:
+activePIDs:
+output_names: Intercooler Spray, Oil Pressure, Shift Light
+out1PIDs: 
+out1MinMaxTime: 1000, 0
+O1C1Logic:
+O1C1RelOps:
+O1C1CompVals: 
+O1C1Hyst:
+out2PIDs: 
+out2MinMaxTime: 1000, 0
+O2C1Logic:
+O2C1RelOps:
+O2C1CompVals: 
+O2C1Hyst:
+out3PIDs: 
+out3MinMaxTime: 1000, 0
+O3C1Logic:
+O3C1RelOps:
+O3C1CompVals: 
+O3C1Hyst:
+out4PIDs: 
+out4MinMaxTime: 1000, 0
+O4C1Logic:
+O4C1RelOps:
+O4C1CompVals: 
+O4C1Hyst:

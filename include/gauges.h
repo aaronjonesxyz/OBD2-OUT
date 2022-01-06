@@ -1,23 +1,32 @@
+#ifndef GAUGES_H
+#define GAUGES_H
+
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
 
-#define UPDATE_INTERVAL 1000
+#define UPDATE_INTERVAL 220
 
-class Histogram {
-    public:
+enum {
+PID,
+RANGE
+};
+
+class XYPlotter {
     int pid;
-    private:
+    uint8_t newPid = 0;
+    uint8_t newRange = 0;
     String name;
     String unit;
-    int rangeH;
-    int rangeL;
     float stepsPerUnit;
-    int history[20] = {0};
-    unsigned long int updateTime = 0;
+    int history[50] = {0};
+    uint32_t updateTime = 0;
 
     public:
-    Histogram( int p, int rL, int rH );
+    void begin();
+    void newData( uint8_t );
     void update();
 };
 
-extern Histogram hist;
+void textDisplay();
+
+#endif
