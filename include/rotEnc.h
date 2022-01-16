@@ -22,7 +22,7 @@ void in1_ISR();
 void in2_ISR();
 void button_ISR();
 
-class RotaryEncoder{
+class RotaryEncoder {
   int firstInt = 0;
   int queue[5] = {0};
   int queueLast = -1;

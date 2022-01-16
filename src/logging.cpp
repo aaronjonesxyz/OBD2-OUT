@@ -33,14 +33,18 @@ void LoggerClass::init(){ // Check if a counter file for this log exists, read a
   file = SD.open(filename, O_WRITE | O_CREAT);
   if(file){
     file.print("Time");
-    for( auto pid : settings.activePIDs ){
-      file.print( "," );
-      file.print( OBD2.pidName( masterPIDList[pid] ) );
+    for( int i = 0; i < masterPID_n; i++ ){
+      if( settings.supportedPIDs[i] ) {
+        file.print( "," );
+        file.print( OBD2.pidName( masterPIDList[i] ) );
+      }
     }
     file.print("\r\nSecs");
-    for( auto pid : settings.activePIDs ){
-      file.print( "," );
-      file.print( OBD2.pidUnits( masterPIDList[pid] ) );
+    for( int i = 0; i < masterPID_n; i++ ){
+      if( settings.supportedPIDs[i] ) {
+        file.print( "," );
+        file.print( OBD2.pidUnits( masterPIDList[i] ) );
+      }
     }
     file.print("\r\n");
     file.flush();
@@ -51,9 +55,11 @@ void LoggerClass::init(){ // Check if a counter file for this log exists, read a
 void LoggerClass::logEntry(){
   if(file){
     file.print( String( float( millis()/1000.000 ), 3 ) );
-    for( auto &pidVal : currentPIDValues ){
-    file.print( "," );
-    file.print( pidVal );
+    for( int i = 0; i < masterPID_n; i++ ){
+      if( settings.supportedPIDs[i] ) {
+        file.print( "," );
+        file.print( currentPIDValues[i] );
+      }
     }
     file.print("\r\n");
     lines++;

@@ -74,12 +74,13 @@ enum {
 };
 
 extern uint32_t updateTime;
+extern uint32_t loggingTime;
 
 extern SPIClass SPI_2;
 
 extern Adafruit_SSD1306 display;
 
-extern float currentPIDValues[20];
+extern float currentPIDValues[masterPID_n];
 extern uint8_t OBDConnected;
 
 extern std::vector<String> mainMenuLabels;
@@ -92,12 +93,10 @@ extern std::vector<String> outputControlLabels;
 
 struct settings_t {
   uint8_t dataDisplayStyle = XYGRAPH;
+  uint8_t dataDisplayPIDs[4] = { 0, 0, 0, 0 };
   int graphRangeH = 100;
   int graphRangeL = -40;
   uint8_t supportedPIDs[masterPID_n];
-  uint8_t supportedPIDs_n;
-  uint8_t activePIDs[20];
-  uint8_t activePIDs_n;
 
   uint16_t loggingFreq = 1000;
 
@@ -115,5 +114,6 @@ extern XYPlotter xyPlotter;
 extern LoggerClass logger;
 
 void QD( float );
+void QDHex( int );
 
 #endif

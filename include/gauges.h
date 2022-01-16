@@ -4,8 +4,6 @@
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
 
-#define UPDATE_INTERVAL 220
-
 enum {
 PID,
 RANGE

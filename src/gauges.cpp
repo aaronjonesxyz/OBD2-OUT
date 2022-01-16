@@ -5,7 +5,7 @@
 #include <Adafruit_SSD1306.h>
 
 void XYPlotter::begin() {
-  pid = settings.activePIDs[0];
+  pid = settings.dataDisplayPIDs[0];
   int rangeLAbs = ( settings.graphRangeL > -1 ) ? settings.graphRangeH - settings.graphRangeL : settings.graphRangeH + -settings.graphRangeL;
   stepsPerUnit = 37.00 / rangeLAbs;
   name = OBD2.pidName( masterPIDList[pid] );
@@ -23,7 +23,7 @@ void XYPlotter::newData( uint8_t type ) {
 
 void XYPlotter::update() {
   if( newPid ) {
-    pid = settings.activePIDs[0];
+    pid = settings.dataDisplayPIDs[0];
     int rangeLAbs = ( settings.graphRangeL > -1 ) ? settings.graphRangeH - settings.graphRangeL : settings.graphRangeH + -settings.graphRangeL;
     stepsPerUnit = 37.00 / rangeLAbs;
     name = OBD2.pidName( masterPIDList[pid] );
@@ -84,9 +84,9 @@ void XYPlotter::update() {
 void textDisplay() {
   switch( settings.dataDisplayStyle ) {
     case 1: {                                                                   // TODO: function for drawing name, unit, val that takes position data
-      String name = OBD2.pidName( masterPIDList[settings.activePIDs[0]] );
-      String unit = OBD2.pidUnits( masterPIDList[settings.activePIDs[0]] );
-      String val = String(currentPIDValues[0]);
+      String name = OBD2.pidName( masterPIDList[settings.dataDisplayPIDs[0]] );
+      String unit = OBD2.pidUnits( masterPIDList[settings.dataDisplayPIDs[0]] );
+      String val = String((int)currentPIDValues[0]);
       display.clearDisplay();
       display.setCursor( 64 - ( name.length() * 3), 0 );
       display.setTextSize(1);
@@ -101,8 +101,8 @@ void textDisplay() {
       break; }
     
     case 2:
-      String name = OBD2.pidName( masterPIDList[settings.activePIDs[0]] );
-      String unit = OBD2.pidUnits( masterPIDList[settings.activePIDs[0]] );
+      String name = OBD2.pidName( masterPIDList[settings.dataDisplayPIDs[0]] );
+      String unit = OBD2.pidUnits( masterPIDList[settings.dataDisplayPIDs[0]] );
       display.clearDisplay();
       display.setCursor( 64 - ( name.length() * 3), 0 );
       display.setTextSize(1);
@@ -112,11 +112,11 @@ void textDisplay() {
       display.print( unit );
       display.setCursor( 0, 10 );
       display.setTextSize(3);
-      display.print(currentPIDValues[0]);
+      display.print((int)currentPIDValues[0]);
       display.drawFastHLine( 0, 32, 127, WHITE );
       // Lower half
-      name = OBD2.pidName( masterPIDList[settings.activePIDs[1]] );
-      unit = OBD2.pidUnits( masterPIDList[settings.activePIDs[1]] );
+      name = OBD2.pidName( masterPIDList[settings.dataDisplayPIDs[1]] );
+      unit = OBD2.pidUnits( masterPIDList[settings.dataDisplayPIDs[1]] );
       display.setCursor( 64 - ( name.length() * 3), 34 );
       display.setTextSize(1);
       display.print( name );
@@ -125,7 +125,7 @@ void textDisplay() {
       display.print( unit );
       display.setCursor( 0, 43 );
       display.setTextSize(3);
-      display.print(currentPIDValues[1]);
+      display.print((int)currentPIDValues[1]);
       display.display();
     break;
 

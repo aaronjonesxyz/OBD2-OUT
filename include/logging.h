@@ -8,6 +8,7 @@ class LoggerClass {
   public:
     void init();
     void logEntry();
+    void newFile();
 
   private:
     uint8_t fnum;

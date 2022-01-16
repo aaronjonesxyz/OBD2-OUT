@@ -7,14 +7,14 @@
 #include "gauges.h"
 #include "displayFuncs.h"
 
-alert_t alertQueue[ALERT_MAX] = { { -1, -1 } };
+alert_t alertQueue[ALERT_MAX]  = { { NULL, -1  } };;
 int alertLast = 0;
 unsigned long int alertTime = 0;
 int alertActive = 0;
 
 int menuSelector( std::vector< String > items, String title, int cursor = 0 ) { 
   display.setTextSize(1);
-  int titleCursor = 64 - ( ( title.length() / 2 ) * 6 );
+  int titleCursor = 64 - ( ( title.length() * 6 ) / 2 );
   int itemsLen = items.size();
   items.push_back( "Back" );
 
@@ -275,7 +275,7 @@ void menuSystem() {
   display.setTextSize(1);
   int state = MAINMENU;
   uint8_t prevCursor[3] = {0,0,0};
-  uint8_t ctrlNum;
+  uint8_t ctrlNum = 0;
   while( state != -1 ) {
     switch( state ) {
       case MAINMENU:
@@ -288,10 +288,9 @@ void menuSystem() {
         prevCursor[1] = state - DATADISPLAY_STYLE;
         if( state == 9 ) state = 0, prevCursor[1] = 0;
         break;
-      case LOGGING:
-        state = LOGGING_FREQUENCY + menuSelector( loggingMenuLabels, "Logging", prevCursor[1] );
-        prevCursor[1] = state - LOGGING_FREQUENCY;
-        if( state == 11 ) state = 0, prevCursor[1] = 0;
+      case LOGGING_FREQUENCY:
+        settings.loggingFreq = numberSelector( 100, 5000, "Frequency in mS", settings.loggingFreq );
+        state = MAINMENU;
         break;
       case OUTPUTCONTROL: {
         std::vector<String> _outControl;
@@ -301,7 +300,7 @@ void menuSystem() {
         }
         state = OUTPUTCONTROL_MENU + menuSelector( _outControl, "Output Control", prevCursor[1] );
         prevCursor[1] = state - OUTPUTCONTROL_MENU;
-        if( state == 15 ) state = 0, prevCursor[1] = 0;
+        if( state == OUTPUTCONTROL_MENU + 4 ) state = MAINMENU, prevCursor[1] = 0;
         break; }
 
 
@@ -317,12 +316,12 @@ void menuSystem() {
           std::vector<String> _PIDs;
           _PIDs.reserve( PIDs_n );
           for( int i = 0; i < PIDs_n; i++ ) {
-            _PIDs.push_back(OBD2.pidName( masterPIDList[settings.activePIDs[i]] ));
+            _PIDs.push_back(OBD2.pidName( masterPIDList[settings.dataDisplayPIDs[i]] ));
           }
           c = menuSelector( _PIDs, "Data Display PIDs", c );
           if( c < PIDs_n ) {
             int p = PIDSelector();
-            if( p > -1 ) settings.activePIDs[c] = p, xyPlotter.newData( PID );
+            if( p > -1 ) settings.dataDisplayPIDs[c] = p, xyPlotter.newData( PID );
           } else {
             break;
           }
@@ -342,57 +341,29 @@ void menuSystem() {
         state = DATADISPLAY;
         break; }
 
-
-      case LOGGING_FREQUENCY:
-        settings.loggingFreq = numberSelector( 0, 5000, "Frequency in mS", settings.loggingFreq );
-        state = LOGGING;
-        break;
-      case LOGGING_DATA: {
-        uint8_t c = 0;
-        while( c != 16 ){
-          std::vector<String> _PIDs;
-          _PIDs.reserve(16);
-          int i = 0;
-          for( auto& p : settings.activePIDs ) {
-            if( i > 3 ) _PIDs.push_back( OBD2.pidName(masterPIDList[p]) ); else i++;
-          }
-          c = menuSelector( _PIDs, "Logging PIDs", c );
-          if( c < 16 ) {
-            uint8_t p = PIDSelector();
-            if( p > -1 ) settings.activePIDs[c+4] = p;
-          } else {
-            break;
-          }
-        }
-        state = LOGGING;
-        break; }
-
-
       case OUTPUTCONTROL_MENU ... OUTPUTCONTROL_MENU+3: {
-        ctrlNum = state - 9;
-        uint8_t c = menuSelector( { "Name", "PIDs", "Control Logic" }, settings.outControl[ctrlNum].name, prevCursor[2] );
+        ctrlNum = state - OUTPUTCONTROL_MENU;
+        uint8_t c = menuSelector( outputControlLabels, settings.outControl[ctrlNum].name, prevCursor[2] );
         prevCursor[2] = c;
-        if( c == 3 ) { state = OUTPUTCONTROL; break; }
+        if( c == 3 ) { state = OUTPUTCONTROL; prevCursor[2] = 0; break; }
         if( c ) {
-          state = 12 + c;
+          state = (OUTPUTCONTROL_MENU+3) + c;
         } else {
           String title = "Output ";
           title = title + ( ctrlNum + 1);
           settings.outControl[ctrlNum].name = textEdit( settings.outControl[ctrlNum].name, title );
         }
         break; }
+
       case OUTPUTCONTROL_PIDS: {
-        std::vector<String> _PIDs;
-        _PIDs.reserve(3);
-        _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[0]] ) );
-        _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[1]] ) );
-        _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[2]] ) );
         uint8_t c = 0;
         while( c != 3 ){
-          _PIDs[0] = OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[0]] );
-          _PIDs[1] = OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[1]] );
-          _PIDs[2] = OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[2]] );
-          c = menuSelector( _PIDs, "Output  PIDs", c );                                               // TODO: build string "output x PIDs"
+          std::vector<String> _PIDs;
+          _PIDs.reserve(3);
+          _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[0]] ) );
+          _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[1]] ) );
+          _PIDs.push_back( OBD2.pidName( masterPIDList[settings.outControl[ctrlNum].PIDs[2]] ) );
+          c = menuSelector( _PIDs, settings.outControl[ctrlNum].name, c );
           if( c < 3 ) {
             uint8_t p = PIDSelector();
             if( p > -1 ) settings.outControl[ctrlNum].PIDs[c] = p;
@@ -402,6 +373,10 @@ void menuSystem() {
           }
         }
         break; }
+
+      case OUTPUTCONTROL_CTRLLOGIC: {
+        
+      break; }
     }
   }
 }
@@ -416,12 +391,12 @@ void checkAlerts() {
     for( int i = 0; i < ALERT_MAX-1; i++ ) {
       alertQueue[i] = alertQueue[i+1];
     }
-    alertQueue[ALERT_MAX] = { -1, -1 };
+    alertQueue[ALERT_MAX] = { NULL, -1 };
     ( alertLast > 0 ) ? alertLast-- : alertLast = 0;
   }
 
   if( alertActive ) {
-    String name = settings.outControl[alertQueue[0].output].name;
+    String name = alertQueue[0].output->name;
     String state = stateName[alertQueue[0].state];
     int rectWidth;
     ( name.length() > 3 ) ? rectWidth = ( name.length() * 6 ) + 5 : rectWidth = 29;
@@ -436,7 +411,7 @@ void checkAlerts() {
   }
 }
 
-void outputStateAlert( int output, int state ) {
+void outputStateAlert( OutputControllerClass *output, int state ) {
   if( alertLast <= ALERT_MAX ) { alertQueue[alertLast] = { output, state }; alertLast++; }
 }
 

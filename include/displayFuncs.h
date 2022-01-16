@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
+#include "globals.h"
 
 #define ALERT_TIME 1500
 #define ALERT_MAX 10
@@ -10,11 +11,11 @@
 #define TEXT_MAXLEN 18
 
 struct alert_t {
-  int output = -1;
+  OutputControllerClass *output = NULL;
   int state = -1;
 };
 
-const String stateName[2] = {{"ON"}, {"OFF"}};
+const String stateName[2] = {{"OFF"}, {"ON"}};
 
 extern alert_t alertQueue[ALERT_MAX];
 
@@ -33,7 +34,7 @@ enum {
 enum {
   MAINMENU,
   DATADISPLAY,
-  LOGGING,
+  LOGGING_FREQUENCY,
   OUTPUTCONTROL,
   PIDRELOAD,
 
@@ -42,13 +43,12 @@ enum {
   DATADISPLAY_GRAPHRANGEH,
   DATADISPLAY_GRAPHRANGEL,
 
-  LOGGING_FREQUENCY,
-  LOGGING_DATA,
-
   OUTPUTCONTROL_MENU,
 
-  OUTPUTCONTROL_PIDS = 15,
+  OUTPUTCONTROL_PIDS = 13,
   OUTPUTCONTROL_CTRLLOGIC,
+  OUTPUTCONTROL_MINONTIME,
+  OUTPUTCONTROL_MAXONTIME,
 
   OUTPUTCONTROL_CTRLLOGIC_LOGIC,
   OUTPUTCONTROL_CTRLLOGIC_RELOPS,
@@ -70,6 +70,6 @@ void menuSystem();
 
 void checkAlerts();
 
-void outputStateAlert( int output, int state );
+void outputStateAlert( OutputControllerClass *output, int state );
 
 #endif
