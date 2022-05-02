@@ -39,12 +39,22 @@ void LoggerClass::init(){ // Check if a counter file for this log exists, read a
         file.print( OBD2.pidName( masterPIDList[i] ) );
       }
     }
+
+    for( auto& output : settings.outControl ) {
+      file.print( "," );
+      file.print( output.name + "output" );
+    }
+
     file.print("\r\nSecs");
     for( int i = 0; i < masterPID_n; i++ ){
       if( settings.supportedPIDs[i] ) {
         file.print( "," );
         file.print( OBD2.pidUnits( masterPIDList[i] ) );
       }
+    }
+    for( auto& output : settings.outControl ) {
+      file.print( "," );
+      file.print( "status" );
     }
     file.print("\r\n");
     file.flush();
@@ -54,11 +64,19 @@ void LoggerClass::init(){ // Check if a counter file for this log exists, read a
 
 void LoggerClass::logEntry(){
   if(file){
-    file.print( String( float( millis()/1000.000 ), 3 ) );
+    file.print( String( millis()/1000.000, 3 ) );
     for( int i = 0; i < masterPID_n; i++ ){
       if( settings.supportedPIDs[i] ) {
         file.print( "," );
         file.print( currentPIDValues[i] );
+      }
+    }
+    for( auto& output : settings.outControl ) {
+      file.print( "," );
+      if( output.ctrlStatus == 1 ) {
+        file.print( "CASE " + (String)output.activeCase->index );
+      } else {
+        file.print( "OFF" );
       }
     }
     file.print("\r\n");

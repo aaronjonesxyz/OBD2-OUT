@@ -16,8 +16,11 @@ class XYPlotter {
     String name;
     String unit;
     float stepsPerUnit;
-    int history[50] = {0};
+    int history[60] = {0};
     uint32_t updateTime = 0;
+
+    int rangeH_len;
+    int rangeL_len;
 
     public:
     void begin();

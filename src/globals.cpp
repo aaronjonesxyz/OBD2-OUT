@@ -17,7 +17,7 @@ uint8_t OBDConnected = 0;
 
 std::vector<String> mainMenuLabels { "Data Display", "Logging Frequency", "Output Control" };
 std::vector<String> gaugeMenuLabels { "Style", "Data", "Graph Upper Limit", "Graph Lower Limit" };
-std::vector<String> displayStyleLabels { "XY Plotter", "Text x1", "Text x2", "Text x3", "Text x4" };
+std::vector<String> displayStyleLabels { "Plotter", "Text x1", "Text x2" };
 std::vector<String> outputControlLabels { "Name", "PIDs", "Control Logic", "Min On Time", "Max On Time" };
 
 settings_t settings;

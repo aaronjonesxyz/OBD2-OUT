@@ -3,9 +3,13 @@
 #ifndef OUTPUTCONTROLLER_H
 #define OUTPUTCONTROLLER_H
 
+#include <vector>
+
 enum {
   MORE_THAN,
   LESS_THAN,
+  ROC_UP,
+  ROC_DOWN,
   AND,
   OR,
   DISABLED,
@@ -13,14 +17,22 @@ enum {
   OFF
 };
 
+extern std::vector<String> logicStrings;
+
 struct controlCase_t {
+  uint8_t index;
+
+  uint8_t* pids[2];
+
+  float pidPrev[2];
+
   uint8_t logic; // AND/OR operator, DISABLED ignores this case
 
-  uint8_t relOps[3]; // Relational operators MORE_THAN / LESS_THAN, DISABLED for 2-way or single case
+  uint8_t relOps[2]; // Relational operators MORE_THAN / LESS_THAN, DISABLED for 2-way or single case
   
-  uint8_t compValues[3]; // Values to compare
+  float compValues[2]; // Values to compare
 
-  uint8_t hysteresis;
+  int16_t hysteresis[2];
 };
 
 class OutputControllerClass { 
@@ -36,15 +48,20 @@ class OutputControllerClass {
 
     uint8_t PIDs[3] = {0};
 
-    uint8_t minOnTime; // x 100 = milliseconds, 0 = no min
-    uint8_t maxOnTime; // 0 = no max
+    uint16_t minOnTime; // x 100 = milliseconds, 0 = no min
+    uint16_t maxOnTime; // 0 = no max
+
+    uint32_t lastMillis = 0;
 
     int ctrlStatus = OFF;
     controlCase_t* activeCase = NULL;
     unsigned long int onMillis = 0;
 
     controlCase_t controlCase[4] = 
-    {{ DISABLED, { MORE_THAN, MORE_THAN, MORE_THAN }, { 0, 0, 0 }, 200 }};
+    {{ 1, { &PIDs[0], &PIDs[1] }, {0}, OR, { DISABLED, DISABLED }, { 0, 0 }, 200 },
+    { 2, { &PIDs[0], &PIDs[1] }, {0}, OR, { DISABLED, DISABLED }, { 0, 0 }, 200 },
+    { 3, { &PIDs[0], &PIDs[1] }, {0}, OR, { DISABLED, DISABLED }, { 0, 0 }, 200 },
+    { 4, { &PIDs[0], &PIDs[1] }, {0}, OR, { DISABLED, DISABLED }, { 0, 0 }, 200 }};
 };
 
 #endif

@@ -58,7 +58,7 @@ enum {
 
 void loadPIDs();
 
-int menuSelector( std::vector< String > items, String title, int cursor);
+int menuSelector( std::vector< String > items, String title, int back, int cursor);
 
 int numberSelector( int min, int max, String title, int number = 0 );
 

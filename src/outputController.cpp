@@ -7,6 +7,8 @@
 #include <OBD2.h>
 #include "globals.h"
 
+std::vector<String> logicStrings { "OVER", "UNDER", "+ R.O.C.", "- R.O.C.", "AND", "OR", "DISABLED", "ON", "OFF" };
+
 void OutputControllerClass::update() {
 
   // Check current PID values against cases
@@ -15,54 +17,63 @@ void OutputControllerClass::update() {
     currentPIDValues[PIDs[1]],
     currentPIDValues[PIDs[2]]
   };
+
+  float casePIDValues[2];
   if( ctrlStatus == OFF ) {
     for ( auto& cCase: controlCase ) {  // Iterate through the output control cases
-      switch ( cCase.logic ) {  // Make sure case is enabled, check logical operator
-        case AND: {
-          int onCount = 0;
-          for ( int i = 0; i < 3; i++ ) { // 
-            switch ( cCase.relOps[i] ) {
-              case MORE_THAN: if ( currValues[i] >= cCase.compValues[i] ) { onCount++; } break;
 
-              case LESS_THAN: if ( currValues[i] <= cCase.compValues[i] ) { onCount++; } break;
+      casePIDValues[0] = currentPIDValues[*cCase.pids[0]];
+      casePIDValues[1] = currentPIDValues[*cCase.pids[1]];
 
-              case DISABLED: onCount++; break;
+      int onCount = 0;
+      for ( int i = 0; i < 2; i++ ) {
+        int more, up = 0;
+        switch ( cCase.relOps[i] ) {
+          case MORE_THAN:
+            more = 1;
+          case LESS_THAN:
+            if ( ( more ) ? casePIDValues[i] >= cCase.compValues[i] : casePIDValues[i] <= cCase.compValues[i] ) { onCount++; } break;
+
+          case ROC_UP:
+            up = 1;
+          case ROC_DOWN:
+            if( lastMillis == 0 ) {
+              lastMillis = millis();
+            } else if( ( millis() - lastMillis ) >= 500 ) {
+              float saveValue = casePIDValues[i];
+              casePIDValues[i]  = ( up ) ? ( casePIDValues[i] - cCase.pidPrev[i] ) * 2 : ( cCase.pidPrev[i] - casePIDValues[i] ) * 2;
+              if( casePIDValues[i] >= cCase.compValues[i] ) onCount++;
+              cCase.pidPrev[i] = saveValue;
             }
-          }
-          if ( onCount == 3 ) { pinControl( ON ); activeCase = &cCase; }
-          break;
+            break;
+
+          case DISABLED: break;
         }
 
-        case OR: {
-          int onCount = 0;
-          for ( int i = 0; i < 3; i++ ) { // Truth table index
-            switch ( cCase.relOps[i] ) {
-              case MORE_THAN: if ( currValues[i] >= cCase.compValues[i] ) { onCount++; } break;
-
-              case LESS_THAN: if ( currValues[i] <= cCase.compValues[i] ) { onCount++; } break;
-
-              case DISABLED: onCount++; break;
-            }
-            if ( onCount >= 1 ) { pinControl( ON ); activeCase = &cCase; break; }
-          }
-          break;
+        if( cCase.logic == AND && onCount >= 3 ) {
+          pinControl( ON );
+          activeCase = &cCase;
+        } else if( onCount >= 1 ) {
+          pinControl( ON );
+          activeCase = &cCase;
         }
-
-        case DISABLED:
-          break;
       }
     }
   }
 
   // Check if any outputs need to be turned off
   if( ctrlStatus == ON ) {
-    for ( int i = 0; i < 3; i++ ) {
+    for ( int i = 0; i < 2; i++ ) {
+      uint8_t more = 0;
       switch ( activeCase->relOps[i] ) {
-        case MORE_THAN: if ( ( ( currValues[i] < ( activeCase->compValues[i] - activeCase->hysteresis ) ) && ( millis() - onMillis ) > (minOnTime * 100) ) ||
-        ( ( millis() - onMillis ) > (maxOnTime * 100) ) ) { pinControl( OFF ); } break;                                            // Check if value is outside hysteresis or over max activation time
-
-        case LESS_THAN: if ( ( ( currValues[i] > ( activeCase->compValues[i] + activeCase->hysteresis ) ) && ( millis() - onMillis ) > (minOnTime * 100) ) ||
-        ( ( millis() - onMillis ) > (maxOnTime * 100) ) ) { pinControl( OFF ); } break;
+        
+        case MORE_THAN:
+        more = 1;
+        case LESS_THAN:
+          if( ( ( ( more ) ? casePIDValues[i] : activeCase->compValues[i] + activeCase->hysteresis[i] < ( more ) ? activeCase->compValues[i] - activeCase->hysteresis[i] : casePIDValues[i] ) && ( millis() - onMillis ) > minOnTime )
+          || ( ( millis() - onMillis ) > (maxOnTime * 100) ) ) {
+            pinControl( OFF );
+          } break;
 
         case DISABLED: break;
 

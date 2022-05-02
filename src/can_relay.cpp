@@ -56,7 +56,7 @@ void setup() {
 
   // Init OLED display, SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC)) {
-    Serial.println("SSD1306 allocation failed");
+    //Serial.println("SSD1306 allocation failed");
     for (;;); // loop forever if init fails
   }
 
@@ -65,8 +65,8 @@ void setup() {
 
   display.setTextSize(0);
   display.setTextColor(WHITE);
-  display.setCursor(35, 2);
-  display.println("ETS CAN-OUT");
+  display.setCursor(8, 2);
+  display.println("OBDII Control V0.16");
   display.display();
 
   display.setCursor(0, 15);
@@ -74,9 +74,11 @@ void setup() {
   display.display();
 
   for ( int att = 0; att < 3; att++ ) { // 3 attempts to connect to OBD2 CANBUS
-    if (!OBD2.begin()) {
+    uint8_t obd2 = OBD2.begin();
+    if (obd2 != 1) {
       if ( att == 2 ) {
-        display.print(" FAIL!");
+        display.print("E");
+        display.print(obd2);
         display.display();
         delay(200);
       }
@@ -135,7 +137,6 @@ void loop() {
       saveSettings();
     }
     pollOBD();
-    currentPIDValues[0] = random( -40, 100 );
     for( auto &c: settings.outControl ) {
       c.update();
     }
@@ -143,6 +144,7 @@ void loop() {
       updateTime = millis();
       ( settings.dataDisplayStyle == 0 ) ? xyPlotter.update() : textDisplay();
     }
+    
     if( ( millis() - loggingTime ) > settings.loggingFreq ) {
       loggingTime = millis();
       logger.logEntry();
@@ -180,17 +182,19 @@ uint8_t readSettings() {
         file.readBytes( &oC.PIDs[0], 1 );
         file.readBytes( &oC.PIDs[1], 1 );
         file.readBytes( &oC.PIDs[2], 1 );
-        file.readBytes( &oC.minOnTime, 1 );
-        file.readBytes( &oC.maxOnTime, 1 );
+        file.readBytes( (byte*)&oC.minOnTime, 2 );
+        file.readBytes( (byte*)&oC.maxOnTime, 2 );
         for( auto& cC: oC.controlCase ) {
           file.readBytes( &cC.logic, 1 );
           for( auto& rO: cC.relOps ) {
             file.readBytes( &rO, 1 );
           }
           for( auto& cV: cC.compValues ) {
-            file.readBytes( &cV, 1 );
+            file.readBytes( (byte*)&cV, 2 );
           }
-          file.readBytes( &cC.hysteresis, 1 );
+          for( auto& h: cC.hysteresis ) {
+            file.readBytes( (byte*)&h, 2 );
+          }
         }
       }
       file.close();
@@ -222,7 +226,6 @@ uint8_t saveSettings() {
     file.write( (byte*)&settings.graphRangeL, 4 );
     file.write( settings.supportedPIDs, masterPID_n );
     file.write( (byte*)&settings.loggingFreq, 2 );
-    //file.write( &logFreqH, 1 );
     for( auto& oC: settings.outControl ) {
       oC.name.toCharArray( buf, 18 );
       file.write( buf, 18 );
@@ -230,17 +233,19 @@ uint8_t saveSettings() {
       file.write( &oC.PIDs[0], 1 );
       file.write( &oC.PIDs[1], 1 );
       file.write( &oC.PIDs[2], 1 );
-      file.write( &oC.minOnTime, 1 );
-      file.write( &oC.maxOnTime, 1 );
+      file.write( (byte*)&oC.minOnTime, 2 );
+      file.write( (byte*)&oC.maxOnTime, 2 );
       for( auto& cC: oC.controlCase ) {
         file.write( &cC.logic, 1 );
         for( auto& rO: cC.relOps ) {
           file.write( &rO, 1 );
         }
         for( auto& cV: cC.compValues ) {
-          file.write( &cV, 1 );
+          file.write( (byte*)&cV, 2 );
         }
-        file.write( &cC.hysteresis, 1 );
+        for( auto& h: cC.hysteresis ) {
+          file.write( (byte*)&h, 2 );
+        }
       }
     }
     file.close();

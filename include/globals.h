@@ -17,7 +17,7 @@
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
 #define OLED_DC       PA1
-#define OLED_CS       PA0
+#define OLED_CS       PC15
 #define OLED_RESET    PA8
 
 #define SDCARD_CS PB12
@@ -63,7 +63,7 @@ const uint8_t masterPIDList[] = {
   FUEL_INJECTION_TIMING,
   ENGINE_FUEL_RATE
 };
-const uint8_t masterPID_n = 32;
+const uint8_t masterPID_n = 31;
 
 enum {
   XYGRAPH,
